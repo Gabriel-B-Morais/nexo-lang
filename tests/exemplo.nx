@@ -1,0 +1,7 @@
+idade: int = 30
+nome: string = "Gabriel"
+ativo: bool = true
+
+func soma(x: int, y: int) -> int
+  return x + y
+end

@@ -1,0 +1,53 @@
+namespace App.Model
+
+import Logger from App.Contract
+
+enum Status
+  Pending
+  Active
+  Blocked
+end
+
+interface Repository
+  func find(id: int) -> object
+  func save(data: object) -> bool
+end
+
+trait Timestampable
+  public createdAt: string
+
+  public updatedAt: string
+  public func touch() -> bool
+      return true
+  end
+end
+
+class User extends Model implements Repository, Logger
+
+  use Timestampable
+
+  private id: int
+  public name: string
+  protected email: string
+  private static count: int = 0
+  readonly token: string = "abc"
+
+  construct(id: int, name: string)
+    this.id = id
+    this.name = name
+  end
+
+  public func find(id: int) -> object
+    return {}
+  end
+
+  public func save(data: object) -> bool
+    return true
+  end
+
+  public static func create() -> User
+    count++
+    return new User(1, "novo")
+  end
+
+end

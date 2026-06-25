@@ -1,0 +1,42 @@
+idade: int = 30
+nome: string = "Gabriel"
+ativo: bool = true
+valores: array<int> = [1, 2, 3]
+misto: string|int = "ola"
+
+const Limite: int = 100
+
+usuario = {
+  name: "Maria",
+  age: 25
+}
+
+func soma(x: int, y: int) -> int
+  return x + y
+end
+
+func saudacao nome: string -> string
+  return nome
+end
+
+if idade > 18
+  maior = true
+  print(nome)
+else
+  maior = false
+end
+
+if idade > 18 print(nome)
+
+foreach valores as valor
+  print(valor)
+end
+
+for x in valores
+  total = total + x
+end
+
+contador = 0
+contador++
+resultado = (1 + 2) * 3 - 4 / 2
+condicao = idade > 18 && ativo == true
