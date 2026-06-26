@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "ast.h"
 #include "parser/parser.h"
+#include "interpreter/interpreter.h"
 
 static char *read_file(const char *path)
 {
@@ -30,24 +32,40 @@ int main(int argc, char *argv[])
 {
   if (argc < 2)
   {
-    printf("Uso: %s <arquivo.nx>\n", argv[0]);
+    printf("Uso: %s <arquivo.nx> [--ast]\n", argv[0]);
     return 1;
   }
+
+  // flag opcional --ast mostra a árvore em vez de executar
+  int show_ast = (argc >= 3 && strcmp(argv[2], "--ast") == 0);
+
   char *source = read_file(argv[1]);
   if (!source)
     return 1;
 
   int had_error = 0;
   Stmt *program = parse(source, &had_error);
-
   if (had_error)
   {
-    fprintf(stderr, "\nParsing falhou com erros.\n");
+    fprintf(stderr, "\nParsing falhou.\n");
     free(source);
     return 1;
   }
 
-  ast_print(program);
+  if (show_ast)
+  {
+    ast_print(program);
+  }
+  else
+  {
+    int rt_error = interpret(program);
+    if (rt_error)
+    {
+      free(source);
+      return 1;
+    }
+  }
+
   free(source);
   return 0;
 }
