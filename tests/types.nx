@@ -1,0 +1,7 @@
+idade: int = 30
+nome: string = "Gabriel"
+preco: float = 9.99
+ativo: bool = true
+
+idade_errada: int = "texto"
+nome_errado: string = 42

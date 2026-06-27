@@ -90,6 +90,10 @@ Value value_class(const char *name, void *decl, ObjClass *super)
   c->name = strdup(name);
   c->decl = decl;
   c->super = super;
+  c->static_names = NULL;
+  c->static_values = NULL;
+  c->static_count = 0;
+  c->static_capacity = 0;
   Value v;
   v.type = VAL_CLASS;
   v.as.klass = c;
@@ -342,4 +346,42 @@ void value_print(Value v)
   default:
     break;
   }
+}
+
+void class_static_set(ObjClass *klass, const char *name, Value v)
+{
+  for (int i = 0; i < klass->static_count; i++)
+  {
+    if (strcmp(klass->static_names[i], name) == 0)
+    {
+      klass->static_values[i] = v;
+      return;
+    }
+  }
+  if (klass->static_count + 1 > klass->static_capacity)
+  {
+    klass->static_capacity = klass->static_capacity < 8 ? 8 : klass->static_capacity * 2;
+    klass->static_names = realloc(klass->static_names, sizeof(char *) * klass->static_capacity);
+    klass->static_values = realloc(klass->static_values, sizeof(Value) * klass->static_capacity);
+  }
+  klass->static_names[klass->static_count] = strdup(name);
+  klass->static_values[klass->static_count] = v;
+  klass->static_count++;
+}
+
+int class_static_get(ObjClass *klass, const char *name, Value *out)
+{
+  // sobe pela cadeia de herança (estáticos são herdados)
+  for (ObjClass *k = klass; k != NULL; k = k->super)
+  {
+    for (int i = 0; i < k->static_count; i++)
+    {
+      if (strcmp(k->static_names[i], name) == 0)
+      {
+        *out = k->static_values[i];
+        return 1;
+      }
+    }
+  }
+  return 0;
 }

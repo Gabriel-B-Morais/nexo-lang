@@ -4,6 +4,7 @@
 #include "ast.h"
 #include "parser/parser.h"
 #include "interpreter/interpreter.h"
+#include "checker/checker.h"
 
 static char *read_file(const char *path)
 {
@@ -55,15 +56,25 @@ int main(int argc, char *argv[])
   if (show_ast)
   {
     ast_print(program);
+    free(source);
+    return 0;
   }
-  else
+
+  // Type checking
+  int strict = detect_strict_mode(source);
+  int type_errors = check_types(program, strict);
+  if (type_errors > 0)
   {
-    int rt_error = interpret(program);
-    if (rt_error)
-    {
-      free(source);
-      return 1;
-    }
+    fprintf(stderr, "\nVerificacao de tipos falhou: %d erro(s).\n", type_errors);
+    free(source);
+    return 1;
+  }
+
+  int rt_error = interpret(program);
+  if (rt_error)
+  {
+    free(source);
+    return 1;
   }
 
   free(source);

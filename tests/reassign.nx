@@ -1,0 +1,3 @@
+idade: int = 30
+idade = 40
+idade = "texto agora"

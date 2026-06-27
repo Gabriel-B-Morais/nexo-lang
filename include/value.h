@@ -77,6 +77,10 @@ struct ObjClass
   char *name;
   void *decl;
   ObjClass *super; // superclasse resolvida ou NULL
+  char **static_names;
+  Value *static_values;
+  int static_count;
+  int static_capacity;
 };
 
 // Instância: campos próprios + ponteiro para a classe.
@@ -112,6 +116,10 @@ int object_get(ObjObject *obj, const char *key, Value *out);
 // ----- Instância -----
 void instance_set(ObjInstance *inst, const char *name, Value v);
 int instance_get(ObjInstance *inst, const char *name, Value *out);
+
+// ----- Campos estáticos de classe -----
+void class_static_set(ObjClass* klass, const char* name, Value v);
+int  class_static_get(ObjClass* klass, const char* name, Value* out);
 
 // ----- Utilitários -----
 int value_equals(Value a, Value b);

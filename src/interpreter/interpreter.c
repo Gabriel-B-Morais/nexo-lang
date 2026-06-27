@@ -294,6 +294,11 @@ static Value eval_expr(Expr *expr, Environment *env)
         object_set(obj.as.object, target->as.get.name, val);
         return val;
       }
+      if (obj.type == VAL_CLASS)
+      {
+        class_static_set(obj.as.klass, target->as.get.name, val);
+        return val;
+      }
       runtime_error(expr->line, "Atribuicao de campo exige objeto ou instancia");
       return value_null();
     }
@@ -309,15 +314,19 @@ static Value eval_expr(Expr *expr, Environment *env)
     if (target->type == EXPR_GET)
     {
       Value obj = eval_expr(target->as.get.object, env);
-      if (obj.type != VAL_INSTANCE && obj.type != VAL_OBJECT)
+      if (obj.type != VAL_INSTANCE && obj.type != VAL_OBJECT && obj.type != VAL_CLASS)
       {
-        runtime_error(expr->line, "'++'/'--' exige campo de instancia/objeto");
+        runtime_error(expr->line, "'++'/'--' exige campo de instancia/objeto/classe");
         return value_null();
       }
       Value cur;
-      int found = (obj.type == VAL_INSTANCE)
-                      ? instance_get(obj.as.instance, target->as.get.name, &cur)
-                      : object_get(obj.as.object, target->as.get.name, &cur);
+      int found;
+      if (obj.type == VAL_INSTANCE)
+        found = instance_get(obj.as.instance, target->as.get.name, &cur);
+      else if (obj.type == VAL_CLASS)
+        found = class_static_get(obj.as.klass, target->as.get.name, &cur);
+      else
+        found = object_get(obj.as.object, target->as.get.name, &cur);
       if (!found)
       {
         runtime_error(expr->line, "Campo nao encontrado");
@@ -335,6 +344,8 @@ static Value eval_expr(Expr *expr, Environment *env)
       }
       if (obj.type == VAL_INSTANCE)
         instance_set(obj.as.instance, target->as.get.name, updated);
+      else if (obj.type == VAL_CLASS)
+        class_static_set(obj.as.klass, target->as.get.name, updated);
       else
         object_set(obj.as.object, target->as.get.name, updated);
       return cur;
@@ -401,6 +412,14 @@ static Value eval_expr(Expr *expr, Environment *env)
       runtime_error(expr->line, "Campo nao encontrado");
       return value_null();
     }
+    if (obj.type == VAL_CLASS)
+    {
+      Value out;
+      if (class_static_get(obj.as.klass, expr->as.get.name, &out))
+        return out;
+      runtime_error(expr->line, "Membro estatico nao encontrado");
+      return value_null();
+    }
     runtime_error(expr->line, "Acesso a propriedade exige objeto ou instancia");
     return value_null();
   }
@@ -427,6 +446,25 @@ static Value eval_expr(Expr *expr, Environment *env)
           return r;
         }
         runtime_error(expr->line, "Metodo nao encontrado");
+        return value_null();
+      }
+      if (target.type == VAL_CLASS)
+      {
+        Member *m = find_method(target.as.klass, get->as.get.name);
+        if (m)
+        {
+          int n = expr->as.call.arg_count;
+          Value *args = (n > 0) ? malloc(sizeof(Value) * n) : NULL;
+          for (int i = 0; i < n; i++)
+            args[i] = eval_expr(expr->as.call.args[i], env);
+          // método estático não tem 'this' de instância;
+          // passamos a própria classe como contexto
+          Value r = call_method(m, interp.globals, target, args, n);
+          if (args)
+            free(args);
+          return r;
+        }
+        runtime_error(expr->line, "Metodo estatico nao encontrado");
         return value_null();
       }
       runtime_error(expr->line, "Chamada de metodo exige uma instancia");
@@ -469,7 +507,7 @@ static Value eval_expr(Expr *expr, Environment *env)
           for (int i = 0; i < decl->as.class_decl.member_count; i++)
           {
             Member *m = decl->as.class_decl.members[i];
-            if (!m->is_method)
+            if (!m->is_method && !(m->modifiers & MOD_STATIC))
             {
               Value fv = m->field_init
                              ? eval_expr(m->field_init, env)
@@ -648,6 +686,20 @@ static void exec_stmt(Stmt *stmt, Environment *env)
         runtime_error(stmt->line, "Superclasse nao encontrada");
     }
     Value klass = value_class(stmt->as.class_decl.name, stmt, super);
+
+    // inicializa campos estáticos declarados nesta classe
+    for (int i = 0; i < stmt->as.class_decl.member_count; i++)
+    {
+      Member *m = stmt->as.class_decl.members[i];
+      if (!m->is_method && (m->modifiers & MOD_STATIC))
+      {
+        Value fv = m->field_init
+                       ? eval_expr(m->field_init, env)
+                       : value_null();
+        class_static_set(klass.as.klass, m->name, fv);
+      }
+    }
+
     env_define(env, stmt->as.class_decl.name, klass);
     break;
   }

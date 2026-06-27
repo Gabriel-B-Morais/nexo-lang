@@ -15,4 +15,5 @@ add_executable(nexo
   src/runtime/value.c
   src/runtime/environment.c
   src/interpreter/interpreter.c
+  src/checker/checker.c
 )

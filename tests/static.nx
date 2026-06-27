@@ -1,0 +1,19 @@
+print("=== Static ===")
+
+class Contador
+  public static total: int = 0
+
+  public static func incrementar()
+    Contador.total++
+  end
+
+  public static func getTotal() -> int
+    return Contador.total
+  end
+end
+
+Contador.incrementar()
+Contador.incrementar()
+Contador.incrementar()
+print("Total:", Contador.getTotal())
+print("Acesso direto:", Contador.total)
