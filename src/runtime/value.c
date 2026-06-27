@@ -72,6 +72,44 @@ Value value_object(void)
   return v;
 }
 
+Value value_function(void *decl, void *closure, const char *name)
+{
+  ObjFunction *f = (ObjFunction *)malloc(sizeof(ObjFunction));
+  f->decl = decl;
+  f->closure = closure;
+  f->name = name ? strdup(name) : NULL;
+  Value v;
+  v.type = VAL_FUNCTION;
+  v.as.function = f;
+  return v;
+}
+
+Value value_class(const char *name, void *decl, ObjClass *super)
+{
+  ObjClass *c = (ObjClass *)malloc(sizeof(ObjClass));
+  c->name = strdup(name);
+  c->decl = decl;
+  c->super = super;
+  Value v;
+  v.type = VAL_CLASS;
+  v.as.klass = c;
+  return v;
+}
+
+Value value_instance(ObjClass *klass)
+{
+  ObjInstance *inst = (ObjInstance *)malloc(sizeof(ObjInstance));
+  inst->klass = klass;
+  inst->field_names = NULL;
+  inst->field_values = NULL;
+  inst->field_count = 0;
+  inst->field_capacity = 0;
+  Value v;
+  v.type = VAL_INSTANCE;
+  v.as.instance = inst;
+  return v;
+}
+
 void array_push(ObjArray *arr, Value v)
 {
   if (arr->count + 1 > arr->capacity)
@@ -84,7 +122,6 @@ void array_push(ObjArray *arr, Value v)
 
 void object_set(ObjObject *obj, const char *key, Value v)
 {
-  // Se a chave já existe, sobrescreve
   for (int i = 0; i < obj->count; i++)
   {
     if (strcmp(obj->keys[i], key) == 0)
@@ -116,6 +153,39 @@ int object_get(ObjObject *obj, const char *key, Value *out)
   return 0;
 }
 
+void instance_set(ObjInstance *inst, const char *name, Value v)
+{
+  for (int i = 0; i < inst->field_count; i++)
+  {
+    if (strcmp(inst->field_names[i], name) == 0)
+    {
+      inst->field_values[i] = v;
+      return;
+    }
+  }
+  if (inst->field_count + 1 > inst->field_capacity)
+  {
+    inst->field_capacity = inst->field_capacity < 8 ? 8 : inst->field_capacity * 2;
+    inst->field_names = realloc(inst->field_names, sizeof(char *) * inst->field_capacity);
+    inst->field_values = realloc(inst->field_values, sizeof(Value) * inst->field_capacity);
+  }
+  inst->field_names[inst->field_count] = strdup(name);
+  inst->field_values[inst->field_count] = v;
+  inst->field_count++;
+}
+int instance_get(ObjInstance *inst, const char *name, Value *out)
+{
+  for (int i = 0; i < inst->field_count; i++)
+  {
+    if (strcmp(inst->field_names[i], name) == 0)
+    {
+      *out = inst->field_values[i];
+      return 1;
+    }
+  }
+  return 0;
+}
+
 int value_is_truthy(Value v)
 {
   switch (v.type)
@@ -131,7 +201,7 @@ int value_is_truthy(Value v)
   case VAL_STRING:
     return v.as.string->length > 0;
   default:
-    return 1; // arrays, objetos, funções são "truthy"
+    return 1;
   }
 }
 
@@ -139,10 +209,9 @@ int value_equals(Value a, Value b)
 {
   if (a.type != b.type)
   {
-    // comparação numérica entre int e float
-    if ((a.type == VAL_INT && b.type == VAL_FLOAT))
+    if (a.type == VAL_INT && b.type == VAL_FLOAT)
       return (double)a.as.int_val == b.as.float_val;
-    if ((a.type == VAL_FLOAT && b.type == VAL_INT))
+    if (a.type == VAL_FLOAT && b.type == VAL_INT)
       return a.as.float_val == (double)b.as.int_val;
     return 0;
   }
@@ -161,7 +230,7 @@ int value_equals(Value a, Value b)
            memcmp(a.as.string->chars, b.as.string->chars,
                   a.as.string->length) == 0;
   default:
-    return a.as.object == b.as.object; // identidade
+    return a.as.object == b.as.object;
   }
 }
 
@@ -185,6 +254,10 @@ const char *value_type_name(ValueType type)
     return "object";
   case VAL_FUNCTION:
     return "function";
+  case VAL_CLASS:
+    return "class";
+  case VAL_INSTANCE:
+    return "instance";
   default:
     return "unknown";
   }
@@ -211,8 +284,6 @@ ObjString *value_to_string(Value v)
     return value_string("[array]").as.string;
   case VAL_OBJECT:
     return value_string("[object]").as.string;
-  case VAL_FUNCTION:
-    return value_string("[function]").as.string;
   default:
     return value_string("").as.string;
   }
@@ -262,22 +333,13 @@ void value_print(Value v)
     printf("}");
     break;
   }
-  case VAL_FUNCTION:
-    printf("[function]");
+  case VAL_CLASS:
+    printf("[class %s]", v.as.klass->name);
+    break;
+  case VAL_INSTANCE:
+    printf("[instance of %s]", v.as.instance->klass->name);
     break;
   default:
     break;
   }
-}
-
-Value value_function(void *decl, void *closure, const char *name)
-{
-  ObjFunction *f = (ObjFunction *)malloc(sizeof(ObjFunction));
-  f->decl = decl;
-  f->closure = closure;
-  f->name = name ? strdup(name) : NULL;
-  Value v;
-  v.type = VAL_FUNCTION;
-  v.as.function = f;
-  return v;
 }

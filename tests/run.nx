@@ -1,7 +1,7 @@
 print("=== Nexo rodando ===")
 
 nome = "Gabriel"
-idade = 30
+idade = 10
 print("Nome:", nome)
 print("Idade:", idade)
 
