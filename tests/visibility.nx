@@ -1,0 +1,20 @@
+class Conta
+    private saldo: float = 100.0
+
+    private func validar() -> bool
+        return this.saldo > 0
+    end
+
+    public func sacar(valor: float) -> bool
+        if this.validar()
+            this.saldo = this.saldo - valor
+            return true
+        end
+        return false
+    end
+end
+
+c = new Conta()
+c.sacar(50.0)
+print(c.saldo)
+print(c.validar())

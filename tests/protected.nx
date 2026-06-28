@@ -1,0 +1,24 @@
+class Base
+  protected valor: int = 10
+
+  protected func segredo() -> int
+    return this.valor
+  end
+end
+
+class Filho extends Base
+  public func mostrar() -> int
+    return this.valor
+  end
+
+  public func chamar() -> int
+    return this.segredo()
+  end
+end
+
+class Estranho
+  public func tentar() -> int
+    b = new Base()
+    return b.valor
+  end
+end

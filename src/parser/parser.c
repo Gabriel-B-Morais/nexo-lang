@@ -1133,11 +1133,14 @@ static Member *parse_member(Parser *p, int allow_body)
   }
   else
   {
-    // É um campo: nome : tipo [= valor]
+    // É um campo: nome [: tipo] [= valor]
     consume(p, TOKEN_IDENTIFIER, "Esperado nome do membro");
     m->name = strdup(p->previous.lexeme);
-    consume(p, TOKEN_COLON, "Esperado ':' apos o nome do campo");
-    m->field_type = parse_type(p);
+    // tipo é opcional (em strict, o checker exige; no dinamico, e livre)
+    if (match_tok(p, TOKEN_COLON))
+    {
+      m->field_type = parse_type(p);
+    }
     if (match_tok(p, TOKEN_EQUALS))
       m->field_init = expression(p);
     return m;

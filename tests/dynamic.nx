@@ -1,0 +1,15 @@
+func soma(x, y)
+  return x + y
+end
+
+class User
+  public name
+
+  construct(name)
+    this.name = name
+  end
+end
+
+print(soma(2, 3))
+u = new User("Gabriel")
+print(u.name)
